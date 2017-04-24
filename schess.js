@@ -49,8 +49,16 @@ var Chess = function(fen) {
   var QUEEN = 'q';
   var KING = 'k';
 
+  // Added in  S-Chess
+  var ELEPHANT 'e';
+  var HAWK = 'h';
+
+  // Added in S-Chess
+  //var SYMBOLS = 'pnbrqkeHPNBRQKEH';
   var SYMBOLS = 'pnbrqkPNBRQK';
 
+  // Added in S-Chess
+  //var DEFAULT_POSITION = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq EHeh - 0 1';
   var DEFAULT_POSITION = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
   var POSSIBLE_RESULTS = ['1-0', '0-1', '1/2-1/2', '*'];
@@ -65,7 +73,12 @@ var Chess = function(fen) {
     b: [-17, -15,  17,  15],
     r: [-16,   1,  16,  -1],
     q: [-17, -16, -15,   1,  17, 16, 15,  -1],
-    k: [-17, -16, -15,   1,  17, 16, 15,  -1]
+    k: [-17, -16, -15,   1,  17, 16, 15,  -1],
+    // Added in S-Chess
+    /*
+    e: [-18, -33, -16, -31, -14, 1, 18, 33, 16, 31, 14, -1],
+    h: [-18, -17, -33, -31, -15, -14, 18, 17, 33, 31, 15, 14]
+    */
   };
 
   var ATTACKS = [
@@ -104,6 +117,28 @@ var Chess = function(fen) {
     -15,  0,  0,  0,  0,  0,  0,-16,  0,  0,  0,  0,  0,  0,-17
   ];
 
+  /*
+  var ATTACKS = [
+    148,  0,  0,  0,  0,  0,  0,  88,  0,  0,  0,  0,  0,  0,148, 0,
+      0,148,  0,  0,  0,  0,  0,  88,  0,  0,  0,  0,  0,148,  0, 0,
+      0,  0,148,  0,  0,  0,  0,  88,  0,  0,  0,  0,148,  0,  0, 0,
+      0,  0,  0,148,  0,  0,  0,  88,  0,  0,  0,148,  0,  0,  0, 0,
+      0,  0,  0,  0,148,  0,  0,  88,  0,  0,148,  0,  0,  0,  0, 0,
+      0,  0,  0,  0,  0,148,194,  88,194,148,  0,  0,  0,  0,  0, 0,
+      0,  0,  0,  0,  0,194,181, 120,181,194,  0,  0,  0,  0,  0, 0,
+     88, 88, 88, 88, 88, 88,120,   0,120, 88, 88, 88, 88, 88, 88, 0,
+      0,  0,  0,  0,  0,194,181, 120,181,194,  0,  0,  0,  0,  0, 0,
+      0,  0,  0,  0,  0,148,194,  88,194,148,  0,  0,  0,  0,  0, 0,
+      0,  0,  0,  0,148,  0,  0,  88,  0,  0,148,  0,  0,  0,  0, 0,
+      0,  0,  0,148,  0,  0,  0,  88,  0,  0,  0,148,  0,  0,  0, 0,
+      0,  0,148,  0,  0,  0,  0,  88,  0,  0,  0,  0,148,  0,  0, 0,
+      0,148,  0,  0,  0,  0,  0,  88,  0,  0,  0,  0,  0,148,  0, 0,
+    148,  0,  0,  0,  0,  0,  0,  88,  0,  0,  0,  0,  0,  0,148
+  ];
+  */
+
+  // Shifts and attacks above are related to each other
+  //var SHIFTS = { p: 0, n: 1, b: 2, r: 3, q: 4, k: 5, e: 6, h: 7};
   var SHIFTS = { p: 0, n: 1, b: 2, r: 3, q: 4, k: 5 };
 
   var FLAGS = {
@@ -113,7 +148,9 @@ var Chess = function(fen) {
     EP_CAPTURE: 'e',
     PROMOTION: 'p',
     KSIDE_CASTLE: 'k',
-    QSIDE_CASTLE: 'q'
+    QSIDE_CASTLE: 'q',
+    SUMMON_E: 'e',
+    SUMMON_H: 'h',
   };
 
   var BITS = {
@@ -123,7 +160,9 @@ var Chess = function(fen) {
     EP_CAPTURE: 8,
     PROMOTION: 16,
     KSIDE_CASTLE: 32,
-    QSIDE_CASTLE: 64
+    QSIDE_CASTLE: 64,
+    SUMMON_E: 128,
+    SUMMON_H: 256,
   };
 
   var RANK_1 = 7;
@@ -157,6 +196,33 @@ var Chess = function(fen) {
   var kings = {w: EMPTY, b: EMPTY};
   var turn = WHITE;
   var castling = {w: 0, b: 0};
+  // Needed to determine if a player can place an elephant or hawk.
+  /*
+  var summoning = {
+    w: {e: 0, h: 0},
+    b: {e: 0, h: 0}
+  };
+  */
+
+  // Needed to determine if a piece has moved off its starting rank.
+  /*
+  var moved_off_start = {
+    w: {
+      r: { SQUARES.a1: 0, SQUARES.h1: 0},
+      n: { SQUARES.b1: 0, SQUARES.g1: 0},
+      b: { SQUARES.c1: 0, SQUARES.f1: 0},
+      q: { SQUARES.d1: 0},
+      k: { SQUARES.e1: 0},
+    },
+    b: {
+      r: { SQUARES.a8: 0, SQUARES.h8: 0},
+      n: { SQUARES.b8: 0, SQUARES.g8: 0},
+      b: { SQUARES.c8: 0, SQUARES.f8: 0},
+      q: { SQUARES.d8: 0},
+      k: { SQUARES.e8: 0},
+    }
+  };
+  */
   var ep_square = EMPTY;
   var half_moves = 0;
   var move_number = 1;
@@ -177,6 +243,30 @@ var Chess = function(fen) {
     kings = {w: EMPTY, b: EMPTY};
     turn = WHITE;
     castling = {w: 0, b: 0};
+    // Needed to determine if a player can place an elephant or hawk.
+    /*
+    var summoning = {w: 0, b: 0};
+    */
+
+    // Needed to determine if a piece has moved off its starting rank.
+    /*
+    var moved_off_start = {
+      w: {
+        r: { SQUARES.a1: 0, SQUARES.h1: 0},
+        n: { SQUARES.b1: 0, SQUARES.g1: 0},
+        b: { SQUARES.c1: 0, SQUARES.f1: 0},
+        q: { SQUARES.d1: 0},
+        k: { SQUARES.e1: 0},
+      },
+      b: {
+        r: { SQUARES.a8: 0, SQUARES.h8: 0},
+        n: { SQUARES.b8: 0, SQUARES.g8: 0},
+        b: { SQUARES.c8: 0, SQUARES.f8: 0},
+        q: { SQUARES.d8: 0},
+        k: { SQUARES.e8: 0},
+      }
+    };
+    */
     ep_square = EMPTY;
     half_moves = 0;
     move_number = 1;
@@ -229,8 +319,28 @@ var Chess = function(fen) {
       castling.b |= BITS.QSIDE_CASTLE;
     }
 
+    /*
+
+    if (tokens[3].indexOf('E') > -1) {
+      summoning.w |= BITS.SUMMON_E;
+    }
+    if (tokens[3].indexOf('H') > -1) {
+      summoning.w |= BITS.SUMMON_H;
+    }
+    if (tokens[3].indexOf('e') > -1) {
+      summoning.b |= BITS.SUMMON_E;
+    }
+    if (tokens[3].indexOf('h') > -1) {
+      summoning.b |= BITS.SUMMON_H;
+    */
+
+    //ep_square = (tokens[4] === '-') ? EMPTY : SQUARES[tokens[4]];
     ep_square = (tokens[3] === '-') ? EMPTY : SQUARES[tokens[3]];
+
+    //half_moves = parseInt(tokens[5], 10);
     half_moves = parseInt(tokens[4], 10);
+
+    //move_number = parseInt(tokens[6], 10);
     move_number = parseInt(tokens[5], 10);
 
     update_setup(generate_fen());
@@ -250,6 +360,9 @@ var Chess = function(fen) {
        2: '6th field (move number) must be a positive integer.',
        3: '5th field (half move counter) must be a non-negative integer.',
        4: '4th field (en-passant square) is invalid.',
+       /*
+       5: '4th field (summoning availability) is invalid.',
+       */
        5: '3rd field (castling availability) is invalid.',
        6: '2nd field (side to move) is invalid.',
        7: '1st field (piece positions) does not contain 8 \'/\'-delimited rows.',
@@ -259,26 +372,35 @@ var Chess = function(fen) {
       11: 'Illegal en-passant square',
     };
 
-    /* 1st criterion: 6 space-seperated fields? */
+    /* 1st criterion: 6 space-seperated fields? ... 7 for S-Chess*/
     var tokens = fen.split(/\s+/);
+    //if (tokens.length !== 7) {
     if (tokens.length !== 6) {
       return {valid: false, error_number: 1, error: errors[1]};
     }
 
     /* 2nd criterion: move number field is a integer value > 0? */
+    //if (isNaN(tokens[6]) || (parseInt(tokens[6], 10) <= 0)) {
     if (isNaN(tokens[5]) || (parseInt(tokens[5], 10) <= 0)) {
       return {valid: false, error_number: 2, error: errors[2]};
     }
 
     /* 3rd criterion: half move counter is an integer >= 0? */
+    //if (isNaN(tokens[5]) || (parseInt(tokens[5], 10) < 0)) {
     if (isNaN(tokens[4]) || (parseInt(tokens[4], 10) < 0)) {
       return {valid: false, error_number: 3, error: errors[3]};
     }
 
-    /* 4th criterion: 4th field is a valid e.p.-string? */
+    /* 4th criterion: 5th field is a valid e.p.-string? */
+    //if (!/^(-|[abcdefgh][36])$/.test(tokens[4])) {
     if (!/^(-|[abcdefgh][36])$/.test(tokens[3])) {
       return {valid: false, error_number: 4, error: errors[4]};
     }
+
+    /* 5th criterion: 4th field is a valid summon-string? */
+    // if( !/^(EH?e?h?|He?h?|eh?|h|-)$/.test(tokens[3])) {
+    //   return {valid: false, error_number: 5, error: errors[5]};
+    // }
 
     /* 5th criterion: 3th field is a valid castle-string? */
     if( !/^(KQ?k?q?|Qk?q?|kq?|q|-)$/.test(tokens[2])) {
@@ -310,6 +432,7 @@ var Chess = function(fen) {
           sum_fields += parseInt(rows[i][k], 10);
           previous_was_number = true;
         } else {
+          //if (!/^[prnbqkehPRNBQKEH]$/.test(rows[i][k])) {
           if (!/^[prnbqkPRNBQK]$/.test(rows[i][k])) {
             return {valid: false, error_number: 9, error: errors[9]};
           }
@@ -372,8 +495,22 @@ var Chess = function(fen) {
 
     /* do we have an empty castling flag? */
     cflags = cflags || '-';
+
+    /*
+    var sflags = '';
+    if (summoning.w.e & BITS.SUMMON_E) { sflags += 'E'; }
+    if (summoning.w.h & BITS.SUMMON_H) { sflags += 'H'; }
+    if (summoning.b.e & BITS.SUMMON_E) { sflags += 'e'; }
+    if (summoning.b.h & BITS.SUMMON_H) { sflags += 'h'; }
+    */
+    /* do we have an empty summoning flag? */
+    /*
+    sflags = sflags || '-';
+    */
+
     var epflags = (ep_square === EMPTY) ? '-' : algebraic(ep_square);
 
+    //return [fen, turn, cflags, sflags, epflags, half_moves, move_number].join(' ');
     return [fen, turn, cflags, epflags, half_moves, move_number].join(' ');
   }
 
@@ -462,7 +599,7 @@ var Chess = function(fen) {
       from: from,
       to: to,
       flags: flags,
-      piece: board[from].type
+      piece: board[from].type,
     };
 
     if (promotion) {
@@ -561,9 +698,29 @@ var Chess = function(fen) {
 
             if (board[square] == null) {
               add_move(board, moves, i, square, BITS.NORMAL);
+              /*
+              if (!moved_off_start[piece.type][i] && !attacked(them, kings[us])){
+                if (summoning[us] & BITS.SUMMON_E) {
+                  add_move(board, moves, i, square, (BITS.NORMAL | BITS.SUMMON_E))
+                }
+                if (summoning[us] & BITS.SUMMON_H) {
+                  add_move(board, moves, i, square, (BITS.NORMAL | BITS.SUMMON_H))
+                }
+              }
+              */
             } else {
               if (board[square].color === us) break;
               add_move(board, moves, i, square, BITS.CAPTURE);
+              /*
+              if (!moved_off_start[piece.type][i] && !attacked(them, kings[us])){
+                if (summoning[us] & BITS.SUMMON_E) {
+                  add_move(board, moves, i, square, (BITS.CAPTURE | BITS.SUMMON_E))
+                }
+                if (summoning[us] & BITS.SUMMON_H) {
+                  add_move(board, moves, i, square, (BITS.CAPTURE | BITS.SUMMON_H))
+                }
+              }
+              */
               break;
             }
 
@@ -667,6 +824,14 @@ var Chess = function(fen) {
       if (move.flags & BITS.PROMOTION) {
         output += '=' + move.promotion.toUpperCase();
       }
+
+      /*
+      if (move.flags & BITS.SUMMON_E) {
+        output += '/' + ELEPHANT.toUpperCase();
+      } else if (move.flags & BITS.SUMMON_H) {
+        output += '/' + HAWK.toUpperCase();
+      }
+      */
     }
 
     make_move(move);
@@ -827,6 +992,10 @@ var Chess = function(fen) {
       kings: {b: kings.b, w: kings.w},
       turn: turn,
       castling: {b: castling.b, w: castling.w},
+      /*
+      summoning: {b: summoning.b, w: summoning.w},
+      moved_off_start: {b: moved_off_start.b, w: moved_off_start.w},
+      */
       ep_square: ep_square,
       half_moves: half_moves,
       move_number: move_number
@@ -854,6 +1023,17 @@ var Chess = function(fen) {
     if (move.flags & BITS.PROMOTION) {
       board[move.to] = {type: move.promotion, color: us};
     }
+
+    /* if summoning, place new piece */
+    /*
+    if (move.flags & BITS.SUMMON_E) {
+      board[move.from] = {type: ELEPHANT, color: us}
+      summoning[us] ^= BITS.SUMMON_E;
+    } else if (move.flags & BITS.SUMMON_H) {
+      board[move.from] = {type: HAWK, color: us}
+      summoning[us] ^= BITS.SUMMON_H;
+    }
+    */
 
     /* if we moved the king */
     if (board[move.to].type === KING) {
@@ -909,6 +1089,35 @@ var Chess = function(fen) {
       ep_square = EMPTY;
     }
 
+    /* if piece move off back rank first time, record action */
+    /*
+    if (move.piece in moved_off_start[move.color] &&
+        moved_off_start[move.color][move.piece][move.from] === 0) {
+      moved_off_start[move.color][move.piece][move.from] = 1;
+    }
+    */
+
+    /* if last piece was moved off back rank for the first time, turn off
+       summoning
+    */
+    /*
+    found = false;
+    for (piece in moved_off_start[us]) {
+      piece_squares = moved_off_start[us][piece];
+      for (sq in piece_squares) {
+        // This piece hasn't moved yet, so summoning is still possible (given we
+        // still have a piece in hand)
+        if (piece_squares[sq] === 0) {
+          found = true;
+          break;
+        }
+      }
+      if (found) {break;}
+    }
+
+    if (!found) {summoning[us] = '';}
+    */
+
     /* reset the 50 move counter if a pawn is moved or a piece is captured */
     if (move.piece === PAWN) {
       half_moves = 0;
@@ -932,6 +1141,8 @@ var Chess = function(fen) {
     kings = old.kings;
     turn = old.turn;
     castling = old.castling;
+    //summoning = old.summoning;
+    //moved_off_start = old.moved_off_start;
     ep_square = old.ep_square;
     half_moves = old.half_moves;
     move_number = old.move_number;
@@ -1066,6 +1277,7 @@ var Chess = function(fen) {
     // if we're using the sloppy parser run a regex to grab piece, to, and from
     // this should parse invalid SAN like: Pe2-e4, Rc1c4, Qf3xf7
     if (sloppy) {
+      //var matches = clean_move.match(/([pnbrqkehPNBRQKEH])?([a-h][1-8])x?-?([a-h][1-8])([qrbnehQRBNEH])?/);
       var matches = clean_move.match(/([pnbrqkPNBRQK])?([a-h][1-8])x?-?([a-h][1-8])([qrbnQRBN])?/);
       if (matches) {
         var piece = matches[1];
