@@ -14,7 +14,7 @@ An example of king side castling:
 
 An example of queen side castling:
 
-![alt text](https://github.com/tylermzeller/chess.js/blob/master/screencaptures/schess_castle_qsise.gif "Seirawan Chess")
+![alt text](https://github.com/tylermzeller/chess.js/blob/master/screencaptures/schess_castle_qside.gif "Seirawan Chess")
 
 Elephant and Hawk images:
 
