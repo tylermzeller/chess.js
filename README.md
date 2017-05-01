@@ -1,12 +1,20 @@
 # schess.js
 
-This is a fork of the original chess.js where the purpose of this project is to implement the exciting game of [Seirawan Chess](http://www.seirawanchess.com/). 
+This is a fork of the original chess.js where the purpose of this project is to implement the exciting game of [Seirawan Chess](http://www.seirawanchess.com/).
 
 You can find a demo webpage with the implemented game in the demo folder.
 
 An example of what the interface looks like:
 
 ![alt text](https://github.com/tylermzeller/chess.js/blob/master/screencaptures/schess_summon_e.gif "Seirawan Chess")
+
+An example of king side castling:
+
+![alt text](https://github.com/tylermzeller/chess.js/blob/master/screencaptures/schess_castle.gif "Seirawan Chess")
+
+An example of queen side castling:
+
+![alt text](https://github.com/tylermzeller/chess.js/blob/master/screencaptures/schess_castle_qsise.gif "Seirawan Chess")
 
 Elephant and Hawk images:
 
