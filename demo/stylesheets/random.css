@@ -1,0 +1,67 @@
+.controls {
+  height: 100px;
+  position: absolute;
+  background: white;
+  border-radius: 2px;
+  border-top: 1px solid black;
+  border-bottom: 1px solid black;
+  border-left: 1px solid black;
+}
+
+.control-button {
+  float: left;
+  width: 99px;
+  height: 100px;
+  background: white;
+  border-right: 1px solid black;
+  text-align: center;
+}
+
+.control-button:last-child {
+  width: 98.3px;
+}
+
+.control-button:hover {
+  background: gray;
+}
+
+.hawk-button img {
+  width: 99px;
+}
+
+.elephant-button img {
+  width: 99px;
+}
+
+.queen-button img {
+  width: 99px;
+}
+
+.rook-button img {
+  width: 99px;
+}
+
+.bishop-button img {
+  width: 99px;
+}
+
+.knight-button img {
+  width: 99px;
+}
+
+.defer-button img {
+  width: 99px;
+}
+
+.restart-button {
+  border: 1px solid black;
+  background: transparent;
+  height: 50px;
+  width: 90%;
+  margin: auto;
+  text-align: center;
+}
+
+.restart-button:hover {
+  background: #d21642;
+}

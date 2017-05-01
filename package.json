@@ -1,0 +1,36 @@
+{
+  "name": "schess.js",
+  "version": "0.10.2",
+  "description": "A Javascript S-Chess library for S-Chess move generation/validation, piece placement/movement, and check/checkmate/draw detection",
+  "author": "Jeff Hlywa <jhlywa@gmail.com> (https://github.com/jhlywa)",
+  "license": "BSD-2-Clause",
+  "homepage": "https://github.com/jhlywa/chess.js",
+  "keywords": [
+    "chess",
+    "s-chess"
+  ],
+  "main": "schess.js",
+  "filename": "schess.min.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tylermzeller/schess.js.git"
+  },
+  "npmName": "schess.js",
+  "npmFileMap": [
+    {
+      "basePath": "",
+      "files": [
+        "chess*.js"
+      ]
+    }
+  ],
+  "devDependencies": {
+    "mocha": "2.2.4",
+    "chai": "2.3.0",
+    "uglify-js": "2.4.21"
+  },
+  "scripts": {
+    "test": "./node_modules/.bin/mocha",
+    "minify": "./node_modules/.bin/uglifyjs chess.js -c -m --comments 'license' > chess.min.js"
+  }
+}

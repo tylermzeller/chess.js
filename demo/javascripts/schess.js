@@ -212,6 +212,7 @@ var Chess = function(fen) {
       k: { 4: 0},
     }
   };
+
   var ep_square = EMPTY;
   var half_moves = 0;
   var move_number = 1;
@@ -569,7 +570,7 @@ var Chess = function(fen) {
     return piece;
   }
 
-  function build_move(board, from, to, flags, promotion) {
+  function build_move(board, from, to, flags, options) {
     var move = {
       color: turn,
       from: from,
@@ -584,9 +585,17 @@ var Chess = function(fen) {
       move.summon = HAWK;
     }
 
-    if (promotion) {
+    if (options == undefined){
+        options = {};
+    }
+
+    if (options.promotion) {
       move.flags |= BITS.PROMOTION;
-      move.promotion = promotion;
+      move.promotion = options.promotion;
+    }
+
+    if (options.summon_to) {
+      move.summon_to = options.summon_to;
     }
 
     if (board[to]) {
@@ -604,8 +613,32 @@ var Chess = function(fen) {
          (rank(to) === RANK_8 || rank(to) === RANK_1)) {
           var pieces = [QUEEN, ROOK, BISHOP, KNIGHT];
           for (var i = 0, len = pieces.length; i < len; i++) {
-            moves.push(build_move(board, from, to, flags, pieces[i]));
+            var options = {promotion: pieces[i]};
+            moves.push(build_move(board, from, to, flags, options));
           }
+      } else if (flags & BITS.KSIDE_CASTLE &&
+        (flags & BITS.SUMMON_E || flags & BITS.SUMMON_H)) {
+          // Push the first move, where the piece in hand is summoned on the
+          // king's previous square
+          var options = {summon_to: from};
+          moves.push(build_move(board, from, to, flags, options));
+
+          // Push the second move, where the piece in hand is summoned on the
+          // rook's previous square
+          options.summon_to = turn == WHITE ? SQUARES['h1'] : SQUARES['h8'];
+          moves.push(build_move(board, from, to, flags, options));
+
+      } else if (flags & BITS.QSIDE_CASTLE &&
+        (flags & BITS.SUMMON_E || flags & BITS.SUMMON_H)) {
+          // Push the first move, where the piece in hand is summoned on the
+          // king's previous square
+          var options = {summon_to: from};
+          moves.push(build_move(board, from, to, flags, options));
+
+          // Push the second move, where the piece in hand is summoned on the
+          // rook's previous square
+          options.summon_to = turn == WHITE ? SQUARES['a1'] : SQUARES['a8'];
+          moves.push(build_move(board, from, to, flags, options));
       } else {
        moves.push(build_move(board, from, to, flags));
       }
@@ -680,7 +713,7 @@ var Chess = function(fen) {
 
             if (board[square] == null) {
               add_move(board, moves, i, square, BITS.NORMAL);
-              if (moved_off_start[us][piece.type] && moved_off_start[us][piece.type][i] === 0 && !attacked(them, kings[us])){
+              if (moved_off_start[us][piece.type] && moved_off_start[us][piece.type][i] === 0){
                 if (summoning[us] & BITS.SUMMON_E) {
                   add_move(board, moves, i, square, (BITS.NORMAL | BITS.SUMMON_E));
                 }
@@ -691,7 +724,7 @@ var Chess = function(fen) {
             } else {
               if (board[square].color === us) break;
               add_move(board, moves, i, square, BITS.CAPTURE);
-              if (moved_off_start[us][piece.type] && moved_off_start[us][piece.type][i] === 0 && !attacked(them, kings[us])){
+              if (moved_off_start[us][piece.type] && moved_off_start[us][piece.type][i] === 0){
                 if (summoning[us] & BITS.SUMMON_E) {
                   add_move(board, moves, i, square, (BITS.CAPTURE | BITS.SUMMON_E));
                 }
@@ -722,13 +755,16 @@ var Chess = function(fen) {
         var castling_from = kings[us];
         var castling_to = castling_from + 2;
 
-        if (board[castling_from + 1] == null &&
-            board[castling_to]       == null &&
-            !attacked(them, kings[us]) &&
-            !attacked(them, castling_from + 1) &&
+        if (board[castling_from + 1] == null && board[castling_to] == null &&
+            !attacked(them, kings[us]) && !attacked(them, castling_from + 1) &&
             !attacked(them, castling_to)) {
-          add_move(board, moves, kings[us] , castling_to,
-                   BITS.KSIDE_CASTLE);
+          add_move(board, moves, kings[us], castling_to, BITS.KSIDE_CASTLE);
+          if (summoning[us] & BITS.SUMMON_E) {
+            add_move(board, moves, kings[us], castling_to, (BITS.KSIDE_CASTLE | BITS.SUMMON_E));
+          }
+          if (summoning[us] & BITS.SUMMON_H) {
+            add_move(board, moves, kings[us], castling_to, (BITS.KSIDE_CASTLE | BITS.SUMMON_H));
+          }
         }
       }
 
@@ -745,6 +781,12 @@ var Chess = function(fen) {
             !attacked(them, castling_to)) {
           add_move(board, moves, kings[us], castling_to,
                    BITS.QSIDE_CASTLE);
+         if (summoning[us] & BITS.SUMMON_E) {
+           add_move(board, moves, kings[us], castling_to, (BITS.QSIDE_CASTLE | BITS.SUMMON_E));
+         }
+         if (summoning[us] & BITS.SUMMON_H) {
+           add_move(board, moves, kings[us], castling_to, (BITS.QSIDE_CASTLE | BITS.SUMMON_H));
+         }
         }
       }
     }
@@ -806,12 +848,12 @@ var Chess = function(fen) {
       if (move.flags & BITS.PROMOTION) {
         output += '=' + move.promotion.toUpperCase();
       }
+    }
 
-      if (move.flags & BITS.SUMMON_E) {
-        output += '/' + ELEPHANT.toUpperCase();
-      } else if (move.flags & BITS.SUMMON_H) {
-        output += '/' + HAWK.toUpperCase();
-      }
+    if (move.flags & BITS.SUMMON_E) {
+      output += '/' + ELEPHANT.toUpperCase() + (move.summon_to || '');
+    } else if (move.flags & BITS.SUMMON_H) {
+      output += '/' + HAWK.toUpperCase() + (move.summon_to || '');
     }
 
     make_move(move);
@@ -979,7 +1021,7 @@ var Chess = function(fen) {
       turn: turn,
       castling: {b: castling.b, w: castling.w},
       summoning: {b: summoning.b, w: summoning.w},
-      //moved_off_start: {b: moved_off_start.b, w: moved_off_start.w},
+      // Way to copy objects? This is ugly.
       moved_off_start: {
         w: {
           r: {112: moved_off_start.w.r[112], 119: moved_off_start.w.r[119]},
@@ -1022,15 +1064,6 @@ var Chess = function(fen) {
     /* if pawn promotion, replace with new piece */
     if (move.flags & BITS.PROMOTION) {
       board[move.to] = {type: move.promotion, color: us};
-    }
-
-    /* if summoning, place new piece */
-    if (move.flags & BITS.SUMMON_E) {
-      board[move.from] = {type: ELEPHANT, color: us};
-      summoning[us] ^= BITS.SUMMON_E;
-    } else if (move.flags & BITS.SUMMON_H) {
-      board[move.from] = {type: HAWK, color: us};
-      summoning[us] ^= BITS.SUMMON_H;
     }
 
     /* if we moved the king */
@@ -1085,6 +1118,23 @@ var Chess = function(fen) {
       }
     } else {
       ep_square = EMPTY;
+    }
+
+    /* if summoning, place new piece */
+    if (move.flags & BITS.SUMMON_E) {
+      if (move.summon_to){
+        board[move.summon_to] = {type: ELEPHANT, color: us};
+      } else {
+        board[move.from] = {type: ELEPHANT, color: us};
+      }
+      summoning[us] ^= BITS.SUMMON_E;
+    } else if (move.flags & BITS.SUMMON_H) {
+      if (move.summon_to){
+        board[move.summon_to] = {type: HAWK, color: us};
+      } else {
+        board[move.from] = {type: HAWK, color: us};
+      }
+      summoning[us] ^= BITS.SUMMON_H;
     }
 
     /* if piece move off back rank first time, record action */
@@ -1398,6 +1448,8 @@ var Chess = function(fen) {
     ROOK: ROOK,
     QUEEN: QUEEN,
     KING: KING,
+    ELEPHANT: ELEPHANT,
+    HAWK: HAWK,
     SQUARES: (function() {
                 /* from the ECMA-262 spec (section 12.6.4):
                  * "The mechanics of enumerating the properties ... is
@@ -1754,7 +1806,6 @@ var Chess = function(fen) {
        * .move({ from: 'h7', <- where the 'move' is a move object (additional
        *         to :'h8',      fields are ignored)
        *         promotion: 'q',
-       *         summon: 'h',
        *      })
        */
 
@@ -1770,17 +1821,30 @@ var Chess = function(fen) {
       } else if (typeof move === 'object') {
         var moves = generate_moves();
 
-        /* convert the pretty move object to an ugly move object */
-        for (var i = 0, len = moves.length; i < len; i++) {
-          console.log(moves[i].summon);
-          if (move.from === algebraic(moves[i].from) &&
-              move.to === algebraic(moves[i].to) &&
-              (!('promotion' in moves[i]) ||
-              move.promotion === moves[i].promotion) &&
-              (!('summon' in moves[i]) ||
-              move.summon === moves[i].summon)) {
-            move_obj = moves[i];
-            break;
+        // We have to check the summon moves first, to make sure we make
+        // a summon move when requested.
+        if (move.summon){
+          moves.some(function(mv){
+            if (move.from === algebraic(mv.from) && move.to === algebraic(mv.to) &&
+            move.summon === mv.summon && (!move.summon_to || SQUARES[move.summon_to] === mv.summon_to)){
+              move_obj = mv;
+              return true;
+            }
+            return false;
+          });
+        }
+
+        if (!move_obj) {
+          /* convert the pretty move object to an ugly move object */
+          for (var i = 0, len = moves.length; i < len; i++) {
+            // Find the move with the same from and to squares as the input move.
+            if (move.from === algebraic(moves[i].from) &&
+                move.to === algebraic(moves[i].to) &&
+                (!('promotion' in moves[i]) ||
+                move.promotion === moves[i].promotion)) {
+              move_obj = moves[i];
+              break;
+            }
           }
         }
       }
@@ -1832,6 +1896,19 @@ var Chess = function(fen) {
       }
 
       return null;
+    },
+
+    moved_from_start: function(piece, source) {
+      if (!(piece.color in moved_off_start)){
+        return null;
+      }
+      if (!(piece.type in moved_off_start[piece.color])){
+        return null;
+      }
+      if (!(SQUARES[source] in moved_off_start[piece.color][piece.type])){
+        return true;
+      }
+      return !!moved_off_start[piece.color][piece.type][SQUARES[source]];
     },
 
     history: function(options) {
