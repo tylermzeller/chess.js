@@ -1,3 +1,19 @@
+# schess.js
+
+This is a fork of the original chess.js where the purpose of this project is to implement the exciting game of [Seirawan Chess](http://www.seirawanchess.com/). 
+
+You can find a demo webpage with the implemented game in the demo folder.
+
+An example of what the interface looks like:
+
+![alt text](https://github.com/tylermzeller/chess.js/blob/master/screencaptures/schess_summon_e.gif "Seirawan Chess")
+
+Elephant and Hawk images:
+
+By Chess_alt45.svg: *Chess_blt45.svg: en:User:CburnettChess_nlt45.svg: en:User:CburnettChess_all44.png: OmegaChessFanderivative work: NikNaks93 (talk)Chess_cld44.png: OmegaChessFanderivative work: NikNaks93 (talk) - Chess_alt45.svgChess_cld44.png, CC BY-SA 3.0, https://commons.wikimedia.org/w/index.php?curid=10404604
+
+By Chess_blt45.svg: en:User:CburnettChess_nlt45.svg: en:User:CburnettChess_all44.png: OmegaChessFanderivative work: NikNaks93 (talk) - Chess_blt45.svgChess_nlt45.svgChess_all44.png, CC BY-SA 3.0, https://commons.wikimedia.org/w/index.php?curid=10404495
+
 # chess.js
 
 [![Build Status](https://travis-ci.org/jhlywa/chess.js.svg?branch=master)](https://travis-ci.org/jhlywa/chess.js)
